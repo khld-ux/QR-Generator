@@ -5,164 +5,331 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Generator</title>
     <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #10b981;
+            --bg-light: #f9fafb;
+            --bg-card: #ffffff;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --transition: all 0.2s ease;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 2rem;
-            background-color: #f5f5f5;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, #f5f7ff 0%, #eef2ff 100%);
+            min-height: 100vh;
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            color: var(--text);
+            line-height: 1.6;
         }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.25rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .input-group {
             margin-bottom: 1.5rem;
         }
-        label {
+
+        .input-group label {
             display: block;
             margin-bottom: 0.5rem;
-            font-weight: bold;
+            font-weight: 600;
+            color: var(--text);
         }
-        input[type="text"], textarea {
+
+        .input-group input,
+        .input-group select,
+        .input-group textarea {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
             font-size: 1rem;
+            transition: var(--transition);
+            background: var(--bg-light);
         }
+
+        .input-group input:focus,
+        .input-group select:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
         .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            margin-bottom: 2rem;
         }
+
         .control-item {
-            flex: 1;
-            min-width: 150px;
+            display: flex;
+            flex-direction: column;
         }
+
         .preview {
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin: 2rem 0;
+            position: relative;
         }
-        canvas, img {
-            border: 1px solid #eee;
+
+        #qrCanvas {
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
             background: white;
-            border-radius: 4px;
+            box-shadow: var(--shadow);
+            max-width: 100%;
+            height: auto;
         }
-        .download-btn {
+
+        .btn {
             display: block;
             width: 100%;
-            padding: 0.75rem;
-            background: #007bff;
+            padding: 1rem;
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 1rem;
+            border-radius: var(--radius);
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
+            transition: var(--transition);
+            margin-top: 1rem;
         }
-        .download-btn:hover {
-            background: #0056b3;
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
-        .color-picker {
-            width: 40px;
-            height: 30px;
-            padding: 0;
+
+        .btn:active {
+            transform: translateY(0);
         }
+
         .design-section {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px dashed #ccc;
+            border-top: 1px dashed var(--border);
+            padding-top: 2rem;
         }
-        .design-section h2 {
-            margin-top: 0;
-        }
+
         .logo-controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 1.5rem;
             align-items: center;
+            margin-top: 1rem;
         }
+
+        .logo-control {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 180px;
+        }
+
         .logo-size-label {
+            font-size: 0.9rem;
+            font-weight: 500;
             margin-left: 0.5rem;
-            font-weight: normal;
+            color: var(--text-muted);
+        }
+
+        .helper-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .quality-slider {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .quality-value {
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.75rem;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .logo-controls {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>QR Code Generator</h1>
-        <div class="input-group">
-            <label for="textInput">Enter text or URL:</label>
-            <textarea id="textInput" rows="3" placeholder="Type something to encode..."></textarea>
-        </div>
-        <div class="controls">
-            <div class="control-item">
-                <label>Foreground Color:</label>
-                <input type="color" id="fgColor" value="#000000">
-            </div>
-            <div class="control-item">
-                <label>Background Color:</label>
-                <input type="color" id="bgColor" value="#ffffff">
-            </div>
-            <div class="control-item">
-                <label>Size (px):</label>
-                <input type="number" id="size" value="200" min="50" max="500">
-            </div>
-            <div class="control-item">
-                <label>Error Correction:</label>
-                <select id="eccLevel">
-                    <option value="L">L (7%)</option>
-                    <option value="M" selected>M (15%)</option>
-                    <option value="Q">Q (25%)</option>
-                    <option value="H">H (30%)</option>
-                </select>
-            </div>
-            <div class="control-item">
-                <label>Download Format:</label>
-                <select id="format">
-                    <option value="png">PNG</option>
-                    <option value="jpeg">JPEG</option>
-                    <option value="svg">SVG</option>
-                </select>
-            </div>
-            <div class="control-item" id="jpegQualityContainer" style="align-self: flex-end;">
-                <label>JPEG Quality:</label>
-                <input type="range" id="jpegQuality" min="0" max="100" value="90">
-                <span id="jpegQualityValue">90</span>%
-            </div>
-        </div>
-        <div class="preview">
-            <canvas id="qrCanvas" width="200" height="200"></canvas>
-        </div>
-        <button class="download-btn" id="downloadBtn">Download QR Code</button>
+        <header>
+            <h1>QR Code Generator</h1>
+            <p>Create, customize, and download beautiful QR codes</p>
+        </header>
 
-        <!-- Design Section -->
-        <div class="design-section">
-            <h2>Design QR Code</h2>
-            <div class="logo-controls">
-                <div>
-                    <label for="logoUpload">Add Logo/Image (optional):</label>
-                    <input type="file" id="logoUpload" accept="image/*">
-                </div>
-                <div>
-                    <label for="logoSize">Logo Size:</label>
-                    <input type="range" id="logoSize" min="10" max="50" value="20">
-                    <span class="logo-size-label" id="logoSizeValue">20</span>% of QR
+        <div class="content">
+            <div class="section">
+                <h2 class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M4.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0-.5-.5zm2 0a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0-.5-.5zm3.5-.25a.5.5 0 0 1 .5.5v1a.5.5 0 0 0 .5.5h1a1.5 1.5 0 1 1 0 3h-1a.5.5 0 0 0 .5.5v1a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 1-.5-.5h-1a1.5 1.5 0 1 1 0-3zm-6.5 6.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0-.5-.5zm4 0a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0-.5-.5z"/></svg> Enter Content</h2>
+                <div class="input-group">
+                    <textarea id="textInput" placeholder="Enter text, URL, or any data to encode..."></textarea>
                 </div>
             </div>
-            <p><small>Logo works for PNG and JPEG formats. For SVG, logo will be ignored.</small></p>
+
+            <div class="section">
+                <h2 class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm0 1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V1zm13 3H1v9h14V4z"/></svg> Appearance</h2>
+                <div class="controls">
+                    <div class="control-item">
+                        <label for="fgColor">Foreground Color</label>
+                        <input type="color" id="fgColor" value="#000000">
+                    </div>
+
+                    <div class="control-item">
+                        <label for="bgColor">Background Color</label>
+                        <input type="color" id="bgColor" value="#ffffff">
+                    </div>
+
+                    <div class="control-item">
+                        <label for="size">Size (px)</label>
+                        <input type="number" id="size" value="250" min="100" max="500">
+                    </div>
+
+                    <div class="control-item">
+                        <label for="eccLevel">Error Correction</label>
+                        <select id="eccLevel">
+                            <option value="L">L (7%)</option>
+                            <option value="M" selected>M (15%)</option>
+                            <option value="Q">Q (25%)</option>
+                            <option value="H">H (30%)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-item">
+                        <label for="format">Download Format</label>
+                        <select id="format">
+                            <option value="png">PNG</option>
+                            <option value="jpeg">JPEG</option>
+                            <option value="svg">SVG</option>
+                        </select>
+                    </div>
+
+                    <div class="control-item" id="jpegQualityContainer">
+                        <label>JPEG Quality</label>
+                        <div class="quality-slider">
+                            <input type="range" id="jpegQuality" min="0" max="100" value="90">
+                            <span class="quality-value" id="jpegQualityValue">90</span>%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8 9.355-1.149-.866a1 1 0 0 0-1.032 0l-.206 1.754c-.048.337.148.573.388.573h1.004c.24 0 .436-.236.388-.573l-.206-1.754a1 1 0 0 0-1.032 0l-1.149.866zm2.852-.708a1 1 0 0 0-1.414 0l-.708-.707a1 1 0 0 0-1.414 0l-.707.708a1 1 0 0 0 0 1.414l.707.708a1 1 0 0 0 1.414 0l.708-.707a1 1 0 0 0 0-1.414z"/></svg> Preview</h2>
+                <div class="preview">
+                    <canvas id="qrCanvas" width="250" height="250"></canvas>
+                </div>
+
+                <button class="btn" id="downloadBtn">Download QR Code</button>
+            </div>
+
+            <div class="design-section">
+                <h2 class="section-title"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1a1 1 0 0 1 0 2h1a1 1 0 0 1 0-2h1a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1h-2zm2 0a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1a1 1 0 0 1 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0-1-1v-1a1 1 0 0 0-1-1h-1z"/><path d="M7.002 13a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm5-12a1 1 0 0 1 1 1v6a1 1 0 0 1-2 0V2a1 1 0 0 1 1-1zm-4 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg> Design QR Code</h2>
+                <div class="logo-controls">
+                    <div class="logo-control">
+                        <label for="logoUpload">Add Logo/Image (optional)</label>
+                        <input type="file" id="logoUpload" accept="image/*">
+                    </div>
+
+                    <div class="logo-control">
+                        <label for="logoSize">Logo Size:</label>
+                        <div style="display: flex; align-items: center;">
+                            <input type="range" id="logoSize" min="10" max="50" value="20">
+                            <span class="logo-size-label" id="logoSizeValue">20</span>% of QR
+                        </div>
+                    </div>
+                </div>
+
+                <p class="helper-text">Logo works for PNG and JPEG formats. For SVG, logo will be ignored.</p>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script>
+        // DOM Elements
         const textInput = document.getElementById('textInput');
         const fgColor = document.getElementById('fgColor');
         const bgColor = document.getElementById('bgColor');
@@ -178,59 +345,74 @@
         const logoSizeInput = document.getElementById('logoSize');
         const logoSizeValue = document.getElementById('logoSizeValue');
 
-        // Show/hide JPEG quality slider based on format
-        formatSelect.addEventListener('change', () => {
-            if (formatSelect.value === 'jpeg') {
-                jpegQualityContainer.style.display = 'flex';
-            } else {
-                jpegQualityContainer.style.display = 'none';
-            }
-        });
-        // Initial visibility
-        if (formatSelect.value !== 'jpeg') {
-            jpegQualityContainer.style.display = 'none';
-        }
+        // State
+        let logoImg = null;
 
+        // UI Updates
         jpegQualityInput.addEventListener('input', () => {
             jpegQualityValue.textContent = jpegQualityInput.value;
         });
 
         logoSizeInput.addEventListener('input', () => {
             logoSizeValue.textContent = logoSizeInput.value;
+            generateQRCode(); // Regenerate when logo size changes
         });
 
-        let logoImg = null; // Image object for logo
+        // Format-based UI
+        function updateFormatUI() {
+            if (formatSelect.value === 'jpeg') {
+                jpegQualityContainer.style.display = 'block';
+            } else {
+                jpegQualityContainer.style.display = 'none';
+            }
+            // Regenerate when format changes (logo may be disallowed for SVG)
+            generateQRCode();
+        }
 
+        formatSelect.addEventListener('change', updateFormatUI);
+        // Initial state
+        if (formatSelect.value !== 'jpeg') {
+            jpegQualityContainer.style.display = 'none';
+        }
+
+        // Logo handling
         logoUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) {
                 logoImg = null;
-                generateQRCode(); // redraw without logo
+                generateQRCode();
                 return;
             }
             const reader = new FileReader();
             reader.onload = (event) => {
                 logoImg = new Image();
-                logoImg.crossOrigin = 'anonymous'; // avoid tainted canvas
+                logoImg.crossOrigin = 'anonymous';
                 logoImg.onload = () => {
-                    generateQRCode(); // redraw with logo
+                    generateQRCode();
                 };
                 logoImg.src = event.target.result;
             };
             reader.readAsDataURL(file);
         });
 
+        // Main generation function
         function generateQRCode() {
             const text = textInput.value.trim();
             if (!text) {
-                alert('Please enter some text to encode');
+                // Clear canvas if empty
+                const ctx = qrCanvas.getContext('2d');
+                ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
                 return;
             }
 
             const width = parseInt(sizeInput.value);
             const height = parseInt(sizeInput.value);
 
-            // Draw QR code onto canvas
+            // Update canvas dimensions to match size
+            qrCanvas.width = width;
+            qrCanvas.height = height;
+
+            // Draw QR code
             QRCode.toCanvas(qrCanvas, text, {
                 width: width,
                 height: height,
@@ -245,7 +427,7 @@
                     console.error(error);
                     alert('Failed to generate QR code');
                 } else {
-                    // After QR drawn, draw logo if present and format not SVG
+                    // Draw logo if present and format is not SVG
                     if (logoImg && formatSelect.value !== 'svg') {
                         drawLogo();
                     }
@@ -262,38 +444,26 @@
             const x = (size - logoSizePx) / 2;
             const y = (size - logoSizePx) / 2;
 
-            // Save state, draw logo, restore
             ctx.save();
             ctx.drawImage(logoImg, x, y, logoSizePx, logoSizePx);
             ctx.restore();
         }
 
-        // Auto-generate on input changes
+        // Event listeners for auto-update
         textInput.addEventListener('input', generateQRCode);
         fgColor.addEventListener('input', generateQRCode);
         bgColor.addEventListener('input', generateQRCode);
-        sizeInput.addEventListener('change', () => {
-            generateQRCode();
-            // Reset canvas size attribute? QRCode.toCanvas uses width/height options, not canvas attributes.
-            // Ensure canvas width/height attributes match size? Not required but safe.
-            qrCanvas.width = sizeInput.value;
-            qrCanvas.height = sizeInput.value;
-        });
+        sizeInput.addEventListener('input', generateQRCode); // Changed from change to input
         eccLevel.addEventListener('change', generateQRCode);
-        formatSelect.addEventListener('change', () => {
-            // When format changes, we may need to redraw (logo may be disallowed for SVG)
-            generateQRCode();
-        });
+        // logo_size already handled
 
         // Initial generation
         generateQRCode();
-        // Set canvas dimensions to match initial size
-        qrCanvas.width = sizeInput.value;
-        qrCanvas.height = sizeInput.value;
 
+        // Download functionality
         downloadBtn.addEventListener('click', () => {
             const format = formatSelect.value;
-            const filename = 'qrcode.' + format;
+            const filename = `qrcode.${format}`;
 
             if (format === 'svg') {
                 // Generate SVG via QRCode library (logo ignored for SVG)
