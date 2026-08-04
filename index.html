@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .control-item {
+            flex: 1;
+            min-width: 150px;
+        }
+        .preview {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        canvas, img {
+            border: 1px solid #eee;
+            background: white;
+            border-radius: 4px;
+        }
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background: #0056b3;
+        }
+        .color-picker {
+            width: 40px;
+            height: 30px;
+            padding: 0;
+        }
+        .design-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed #ccc;
+        }
+        .design-section h2 {
+            margin-top: 0;
+        }
+        .logo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+        .logo-size-label {
+            margin-left: 0.5rem;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QR Code Generator</h1>
+        <div class="input-group">
+            <label for="textInput">Enter text or URL:</label>
+            <textarea id="textInput" rows="3" placeholder="Type something to encode..."></textarea>
+        </div>
+        <div class="controls">
+            <div class="control-item">
+                <label>Foreground Color:</label>
+                <input type="color" id="fgColor" value="#000000">
+            </div>
+            <div class="control-item">
+                <label>Background Color:</label>
+                <input type="color" id="bgColor" value="#ffffff">
+            </div>
+            <div class="control-item">
+                <label>Size (px):</label>
+                <input type="number" id="size" value="200" min="50" max="500">
+            </div>
+            <div class="control-item">
+                <label>Error Correction:</label>
+                <select id="eccLevel">
+                    <option value="L">L (7%)</option>
+                    <option value="M" selected>M (15%)</option>
+                    <option value="Q">Q (25%)</option>
+                    <option value="H">H (30%)</option>
+                </select>
+            </div>
+            <div class="control-item">
+                <label>Download Format:</label>
+                <select id="format">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                    <option value="svg">SVG</option>
+                </select>
+            </div>
+            <div class="control-item" id="jpegQualityContainer" style="align-self: flex-end;">
+                <label>JPEG Quality:</label>
+                <input type="range" id="jpegQuality" min="0" max="100" value="90">
+                <span id="jpegQualityValue">90</span>%
+            </div>
+        </div>
+        <div class="preview">
+            <canvas id="qrCanvas" width="200" height="200"></canvas>
+        </div>
+        <button class="download-btn" id="downloadBtn">Download QR Code</button>
+
+        <!-- Design Section -->
+        <div class="design-section">
+            <h2>Design QR Code</h2>
+            <div class="logo-controls">
+                <div>
+                    <label for="logoUpload">Add Logo/Image (optional):</label>
+                    <input type="file" id="logoUpload" accept="image/*">
+                </div>
+                <div>
+                    <label for="logoSize">Logo Size:</label>
+                    <input type="range" id="logoSize" min="10" max="50" value="20">
+                    <span class="logo-size-label" id="logoSizeValue">20</span>% of QR
+                </div>
+            </div>
+            <p><small>Logo works for PNG and JPEG formats. For SVG, logo will be ignored.</small></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script>
+        const textInput = document.getElementById('textInput');
+        const fgColor = document.getElementById('fgColor');
+        const bgColor = document.getElementById('bgColor');
+        const sizeInput = document.getElementById('size');
+        const eccLevel = document.getElementById('eccLevel');
+        const formatSelect = document.getElementById('format');
+        const jpegQualityInput = document.getElementById('jpegQuality');
+        const jpegQualityValue = document.getElementById('jpegQualityValue');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const jpegQualityContainer = document.getElementById('jpegQualityContainer');
+        const logoUpload = document.getElementById('logoUpload');
+        const logoSizeInput = document.getElementById('logoSize');
+        const logoSizeValue = document.getElementById('logoSizeValue');
+
+        // Show/hide JPEG quality slider based on format
+        formatSelect.addEventListener('change', () => {
+            if (formatSelect.value === 'jpeg') {
+                jpegQualityContainer.style.display = 'flex';
+            } else {
+                jpegQualityContainer.style.display = 'none';
+            }
+        });
+        // Initial visibility
+        if (formatSelect.value !== 'jpeg') {
+            jpegQualityContainer.style.display = 'none';
+        }
+
+        jpegQualityInput.addEventListener('input', () => {
+            jpegQualityValue.textContent = jpegQualityInput.value;
+        });
+
+        logoSizeInput.addEventListener('input', () => {
+            logoSizeValue.textContent = logoSizeInput.value;
+        });
+
+        let logoImg = null; // Image object for logo
+
+        logoUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                logoImg = null;
+                generateQRCode(); // redraw without logo
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous'; // avoid tainted canvas
+                logoImg.onload = () => {
+                    generateQRCode(); // redraw with logo
+                };
+                logoImg.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function generateQRCode() {
+            const text = textInput.value.trim();
+            if (!text) {
+                alert('Please enter some text to encode');
+                return;
+            }
+
+            const width = parseInt(sizeInput.value);
+            const height = parseInt(sizeInput.value);
+
+            // Draw QR code onto canvas
+            QRCode.toCanvas(qrCanvas, text, {
+                width: width,
+                height: height,
+                color: {
+                    dark: fgColor.value,
+                    light: bgColor.value
+                },
+                errorCorrectionLevel: eccLevel.value,
+                margin: 2
+            }, (error) => {
+                if (error) {
+                    console.error(error);
+                    alert('Failed to generate QR code');
+                } else {
+                    // After QR drawn, draw logo if present and format not SVG
+                    if (logoImg && formatSelect.value !== 'svg') {
+                        drawLogo();
+                    }
+                }
+            });
+        }
+
+        function drawLogo() {
+            const canvas = qrCanvas;
+            const ctx = canvas.getContext('2d');
+            const size = parseInt(sizeInput.value);
+            const logoSizePercent = parseInt(logoSizeInput.value);
+            const logoSizePx = (size * logoSizePercent) / 100;
+            const x = (size - logoSizePx) / 2;
+            const y = (size - logoSizePx) / 2;
+
+            // Save state, draw logo, restore
+            ctx.save();
+            ctx.drawImage(logoImg, x, y, logoSizePx, logoSizePx);
+            ctx.restore();
+        }
+
+        // Auto-generate on input changes
+        textInput.addEventListener('input', generateQRCode);
+        fgColor.addEventListener('input', generateQRCode);
+        bgColor.addEventListener('input', generateQRCode);
+        sizeInput.addEventListener('change', () => {
+            generateQRCode();
+            // Reset canvas size attribute? QRCode.toCanvas uses width/height options, not canvas attributes.
+            // Ensure canvas width/height attributes match size? Not required but safe.
+            qrCanvas.width = sizeInput.value;
+            qrCanvas.height = sizeInput.value;
+        });
+        eccLevel.addEventListener('change', generateQRCode);
+        formatSelect.addEventListener('change', () => {
+            // When format changes, we may need to redraw (logo may be disallowed for SVG)
+            generateQRCode();
+        });
+
+        // Initial generation
+        generateQRCode();
+        // Set canvas dimensions to match initial size
+        qrCanvas.width = sizeInput.value;
+        qrCanvas.height = sizeInput.value;
+
+        downloadBtn.addEventListener('click', () => {
+            const format = formatSelect.value;
+            const filename = 'qrcode.' + format;
+
+            if (format === 'svg') {
+                // Generate SVG via QRCode library (logo ignored for SVG)
+                QRCode.toString(textInput.value.trim(), {
+                    type: 'svg',
+                    color: {
+                        dark: fgColor.value,
+                        light: bgColor.value
+                    },
+                    errorCorrectionLevel: eccLevel.value,
+                    margin: 2
+                }, (err, svg) => {
+                    if (err) {
+                        console.error(err);
+                        alert('Failed to generate SVG');
+                        return;
+                    }
+                    downloadSVG(svg, filename);
+                });
+            } else if (format === 'jpeg') {
+                const quality = jpegQualityInput.value / 100;
+                qrCanvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/jpeg', quality);
+            } else { // png
+                qrCanvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            }
+        });
+
+        function downloadSVG(svg, filename) {
+            const blob = new Blob([svg], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
